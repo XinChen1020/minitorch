@@ -31,7 +31,7 @@ def add(x: float, y: float) -> float:
 def neg(x: float) -> float:
     "$f(x) = -x$"
     # TODO: Implement for Task 0.1.
-    return float(-x)
+    return -float(x)
 
 
 def lt(x: float, y: float) -> float:
