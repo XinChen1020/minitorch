@@ -11,6 +11,9 @@ from typing_extensions import TypeAlias
 
 from .operators import prod
 
+import itertools
+from collections import deque 
+
 MAX_DIMS = 32
 
 
@@ -85,8 +88,20 @@ def broadcast_index(
     Returns:
         None
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
+
+    if len(big_shape) < len(shape):
+        raise ValueError("Cannot broadcast: big_shape has fewer dimensions than shape.")
+    
+
+    for idx, (big_shape_dim, shape_dim) in enumerate(itertools.zip_longest(big_shape[::-1], shape[::-1])):
+        if big_shape_dim == 1 and shape_dim is None:
+            out_index.append(0)
+        elif big_shape_dim == shape_dim or (big_shape_dim == 1 and shape_dim is not None):
+            out_index.append(big_index[idx])
+        elif big_shape_dim > shape_dim:
+            out_index.append(0)
+
+    
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
@@ -103,9 +118,14 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     Raises:
         IndexingError : if cannot broadcast
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError('Need to implement for Task 2.2')
+    result = deque([])
+    for combination in itertools.zip_longest(shape1[::-1], shape2[::-1], fillvalue=1):
+        if combination[0] != combination[1] and combination[0] != 1 and combination[1] != 1:
+            raise IndexingError(f"Cannot broadcast {shape1} and {shape2}")
 
+        result.appendleft(max(combination))
+
+    return tuple(result)
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
     layout = [1]
