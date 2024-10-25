@@ -89,17 +89,11 @@ def broadcast_index(
         None
     """
 
-    if len(big_shape) < len(shape):
-        raise ValueError("Cannot broadcast: big_shape has fewer dimensions than shape.")
-    
-
-    for idx, (big_shape_dim, shape_dim) in enumerate(itertools.zip_longest(big_shape[::-1], shape[::-1])):
-        if big_shape_dim == 1 and shape_dim is None:
-            out_index.append(0)
-        elif big_shape_dim == shape_dim or (big_shape_dim == 1 and shape_dim is not None):
-            out_index.append(big_index[idx])
-        elif big_shape_dim > shape_dim:
-            out_index.append(0)
+    for dim in range(len(shape)):
+        if shape[dim] == 1:
+            out_index[dim] = 0
+        else:
+            out_index[dim] = big_index[dim + len(big_shape) - len(shape)]
 
     
 
