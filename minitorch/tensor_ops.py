@@ -264,8 +264,16 @@ def tensor_map(
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+
+        in_index = np.zeros(len(in_shape), dtype=np.int32)
+        out_index = np.zeros(len(out_shape), dtype=np.int32)
+
+        for i in range(len(out)):
+            to_index(i, out_shape, out_index)
+            broadcast_index(out_index, out_shape, in_shape, in_index)
+
+            out[index_to_position(out_index, out_strides)] = fn(in_storage[index_to_position(in_index, in_strides)])
+
 
     return _map
 
@@ -309,9 +317,19 @@ def tensor_zip(
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
 
+        # TODO: Implement for Task 2.3.
+
+        out_index = np.zeros(len(out_shape), dtype=np.int32)
+        a_index = np.zeros(len(a_shape), dtype=np.int32)
+        b_index = np.zeros(len(b_shape), dtype=np.int32)
+
+        for i in range(len(out)):
+            to_index(i, out_shape, out_index)
+            broadcast_index(out_index, out_shape, a_shape, a_index)
+            broadcast_index(out_index, out_shape, b_shape, b_index)
+
+            out[index_to_position(out_index, out_strides)] = fn(a_storage[index_to_position(a_index, a_strides)], b_storage[index_to_position(b_index, b_strides)])
     return _zip
 
 
@@ -341,7 +359,18 @@ def tensor_reduce(
         reduce_dim: int,
     ) -> None:
         # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        out_index = np.array(out_shape, dtype=np.int32)
+
+        for i in range(len(out)):
+            to_index(i, out_shape, out_index)
+            reduce_index = out_index
+            out_position = index_to_position(out_index, out_strides)
+
+            for _ in range(a_shape[reduce_dim]):
+                out[out_position] = fn(out[out_position], a_storage[index_to_position(reduce_index, a_strides)])
+
+                reduce_index[reduce_dim] += 1
+
 
     return _reduce
 
