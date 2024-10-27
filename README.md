@@ -7,7 +7,7 @@ Pure Python re-implementation of PyTorch API from scratch following the [MiniTor
 
 - [x] Module 0 - Fundamentals 
 - [x] Module 1 - AutoDiff
-- [ ] Module 2 - Tenosr
+- [x] Module 2 - Tenosr
 - [ ] Module 3 - Efficiency
 - [ ] Module 4 - Network
 
