@@ -362,14 +362,18 @@ def tensor_reduce(
         out_index = np.array(out_shape, dtype=np.int32)
 
         for i in range(len(out)):
+            # Get which index of the out tensor we should start updating with 
             to_index(i, out_shape, out_index)
-            reduce_index = out_index
+
+
             out_position = index_to_position(out_index, out_strides)
+            a_position = index_to_position(out_index, a_strides)
 
+            # Move along the reduce dimension on a to keep updating the corresponding out storage
             for _ in range(a_shape[reduce_dim]):
-                out[out_position] = fn(out[out_position], a_storage[index_to_position(reduce_index, a_strides)])
+                out[out_position] = fn(out[out_position], a_storage[a_position])
 
-                reduce_index[reduce_dim] += 1
+                a_position += a_strides[reduce_dim]
 
 
     return _reduce
