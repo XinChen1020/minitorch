@@ -231,15 +231,15 @@ def tensor_zip(
         else:
             for i in prange(len(out)):
 
-                            # index buffer need to be inside the loop to avoid race condition
-                            a_index = np.empty(MAX_DIMS, dtype=np.int64)
-                            b_index = np.empty(MAX_DIMS, dtype=np.int64)
-                            out_index = np.empty(MAX_DIMS, dtype=np.int64)
+                # index buffer need to be inside the loop to avoid race condition
+                a_index = np.empty(MAX_DIMS, dtype=np.int64)
+                b_index = np.empty(MAX_DIMS, dtype=np.int64)
+                out_index = np.empty(MAX_DIMS, dtype=np.int64)
 
-                            to_index(i, out_shape, out_index)
-                            broadcast_index(out_index, out_shape, a_shape, a_index)
-                            broadcast_index(out_index, out_shape, b_shape, b_index)
-                            out[index_to_position(out_index, out_strides)] = fn(a_storage[index_to_position(a_index, a_strides)],b_storage[index_to_position(b_index, b_strides)])
+                to_index(i, out_shape, out_index)
+                broadcast_index(out_index, out_shape, a_shape, a_index)
+                broadcast_index(out_index, out_shape, b_shape, b_index)
+                out[index_to_position(out_index, out_strides)] = fn(a_storage[index_to_position(a_index, a_strides)],b_storage[index_to_position(b_index, b_strides)])
 
     return njit(parallel=True)(_zip)  # type: ignore
 
