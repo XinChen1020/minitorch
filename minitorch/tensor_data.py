@@ -13,6 +13,7 @@ from .operators import prod
 
 import itertools
 from collections import deque 
+from numba import njit, prange
 
 MAX_DIMS = 32
 
@@ -32,7 +33,6 @@ UserIndex: TypeAlias = Sequence[int]
 UserShape: TypeAlias = Sequence[int]
 UserStrides: TypeAlias = Sequence[int]
 
-
 def index_to_position(index: Index, strides: Strides) -> int:
     """
     Converts a multidimensional tensor `index` into a single-dimensional position in
@@ -47,7 +47,11 @@ def index_to_position(index: Index, strides: Strides) -> int:
     """
 
 
-    return int(np.dot(index, strides))
+    total = 0
+    for i, s in zip(index, strides):
+        total += i * s
+    return total
+
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -63,9 +67,10 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
+    temp_ordinal = ordinal + 0
     for dim in range(len(shape)):
-        out_index[dim] = ordinal % shape[dim]
-        ordinal //= shape[dim]
+        out_index[dim] = temp_ordinal % shape[dim]
+        temp_ordinal //= shape[dim]
 
 
 
@@ -88,12 +93,12 @@ def broadcast_index(
     Returns:
         None
     """
-
-    for dim in range(len(shape)):
+    diff = len(big_shape) - len(shape)
+    for dim in prange(len(shape)):
         if shape[dim] == 1:
             out_index[dim] = 0
         else:
-            out_index[dim] = big_index[dim + len(big_shape) - len(shape)]
+            out_index[dim] = big_index[dim + diff]
 
     
 
