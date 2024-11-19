@@ -1,0 +1,5 @@
+Simple: Epoch 500/500. Time per epoch: 0.245s. Time left: 0.00s.
+Split: Epoch 500/500. Time per epoch: 0.564s. Time left: 0.00s.
+
+
+
