@@ -1,7 +1,6 @@
 from typing import Tuple
 
-import numpy as np
-from numba import njit, prange
+from numba import njit
 
 from .autodiff import Context
 from .tensor import Tensor

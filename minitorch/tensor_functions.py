@@ -122,6 +122,7 @@ class Sigmoid(Function):
 
         return grad_output.f.mul_zip(derivative, grad_output)
 
+
 class ReLU(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
@@ -131,6 +132,7 @@ class ReLU(Function):
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
         return grad_output.f.relu_back_zip(ctx.saved_values[0], grad_output)
+
 
 class Log(Function):
     @staticmethod
@@ -220,9 +222,8 @@ class Permute(Function):
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         (re_order,) = ctx.saved_values
-   
-        return grad_output._new(grad_output._tensor.permute(*re_order)), 0.0
 
+        return grad_output._new(grad_output._tensor.permute(*re_order)), 0.0
 
 
 class View(Function):

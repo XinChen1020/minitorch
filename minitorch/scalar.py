@@ -126,7 +126,7 @@ class Scalar:
 
     def sigmoid(self) -> Scalar:
         return Sigmoid.apply(self)
-    
+
     def relu(self) -> Scalar:
         return ReLU.apply(self)
 
@@ -165,7 +165,6 @@ class Scalar:
 
         derivatives = h.last_fn._backward(h.ctx, d_output)
         return zip(h.inputs, derivatives)
-
 
     def backward(self, d_output: Optional[float] = None) -> None:
         """

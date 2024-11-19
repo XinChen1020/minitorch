@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Tuple
+from typing import Any , Iterable , Tuple
 
 from typing_extensions import Protocol
 from collections import deque
@@ -75,15 +75,15 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     def visit(v: Variable) -> None:
         if v.unique_id in visited or v.is_constant():
             return
-        
+
         visited.add(v.unique_id)
 
         if not v.is_leaf():
-            for parent in v.parents: 
+            for parent in v.parents:
                 visit(parent)
-                
+
         result.appendleft(v)
-    
+
     visit(variable)
 
     return list(result)
@@ -103,14 +103,13 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
     derivatives = {variable.unique_id : deriv}
 
     for v in topological_sort(variable):
-        
+
         if v.is_leaf():
 
             v.accumulate_derivative(derivatives[v.unique_id])
         else:
             for var, d_input in v.chain_rule(derivatives[v.unique_id]):
                 derivatives[var.unique_id] = derivatives.get(var.unique_id, 0) + d_input
-
 
 
 @dataclass

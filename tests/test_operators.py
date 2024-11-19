@@ -125,7 +125,6 @@ def test_transitive(a: float, b: float, c: float) -> None:
         assert lt(a, b) and lt(b, c) == lt(a, c)
 
 
-
 @pytest.mark.task0_2
 @given(small_floats, small_floats)
 def test_symmetric(a: float, b: float) -> None:
@@ -150,14 +149,12 @@ def test_distribute(a: float, b: float, c: float) -> None:
 
 @pytest.mark.task0_2
 @given(small_floats, small_floats, small_floats)
-def test_other(a: float, b:float, c:float) -> None:
+def test_other(a: float, b: float, c: float) -> None:
     """
     Write a test that ensures some other property holds for your functions.
     """
     # TODO: Implement for Task 0.2.
-    assert lt(a,b) == 0 if a >= b else 1
-    
-
+    assert lt(a, b) == 0 if a >= b else 1
 
 # ## Task 0.3  - Higher-order functions
 

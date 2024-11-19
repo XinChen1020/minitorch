@@ -12,8 +12,8 @@ from typing_extensions import TypeAlias
 from .operators import prod
 
 import itertools
-from collections import deque 
-from numba import njit, prange
+from collections import deque
+from numba import prange
 
 MAX_DIMS = 32
 
@@ -33,6 +33,7 @@ UserIndex: TypeAlias = Sequence[int]
 UserShape: TypeAlias = Sequence[int]
 UserStrides: TypeAlias = Sequence[int]
 
+
 def index_to_position(index: Index, strides: Strides) -> int:
     """
     Converts a multidimensional tensor `index` into a single-dimensional position in
@@ -46,12 +47,10 @@ def index_to_position(index: Index, strides: Strides) -> int:
         Position in storage
     """
 
-
     total = 0
     for i, s in zip(index, strides):
         total += i * s
     return total
-
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -71,7 +70,6 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
     for dim in range(len(shape)):
         out_index[dim] = temp_ordinal % shape[dim]
         temp_ordinal //= shape[dim]
-
 
 
 def broadcast_index(
@@ -100,8 +98,6 @@ def broadcast_index(
         else:
             out_index[dim] = big_index[dim + diff]
 
-    
-
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     """
@@ -125,6 +121,7 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
         result.appendleft(max(combination))
 
     return tuple(result)
+
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
     layout = [1]
@@ -251,7 +248,16 @@ class TensorData:
         new_shape = tuple(self.shape[i] for i in order)
         new_strides = tuple(self._strides[i] for i in order)
 
-        return TensorData(self._storage.copy(), new_shape, new_strides)
+        # Handle copying based on the type of storage
+        if numba.cuda.is_cuda_array(self._storage):
+            # If on GPU, explicitly allocate a new GPU array
+            new_storage = numba.cuda.device_array_like(self._storage)
+            new_storage.copy_to_device(self._storage)
+        else:
+            # If on CPU, use NumPy's copy
+            new_storage = self._storage.copy()
+
+        return TensorData(new_storage, new_shape, new_strides)
 
     def to_string(self) -> str:
         s = ""

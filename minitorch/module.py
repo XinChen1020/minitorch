@@ -35,7 +35,6 @@ class Module:
 
         for child in self.modules():
             child.train()
-        
 
     def eval(self) -> None:
         "Set the mode of this module and all descendent modules to `eval`."
@@ -58,10 +57,10 @@ class Module:
             res = res + [(f"{module_name}.{parameter_name}", v) for parameter_name, v in module.named_parameters()]
 
         return res
-    
+
     def parameters(self) -> Sequence[Parameter]:
         "Enumerate over all the parameters of this module and its descendents."
-        
+
         res = [p for p in self.__dict__["_parameters"].values()]
 
         for module in self.__dict__["_modules"].values():

@@ -16,7 +16,7 @@ from .tensor_data import (
 
 if TYPE_CHECKING:
     from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from .tensor_data import Shape , Storage , Strides
 
 
 class MapProto(Protocol):
@@ -274,7 +274,6 @@ def tensor_map(
 
             out[index_to_position(out_index, out_strides)] = fn(in_storage[index_to_position(in_index, in_strides)])
 
-
     return _map
 
 
@@ -362,9 +361,8 @@ def tensor_reduce(
         out_index = np.array(out_shape, dtype=np.int32)
 
         for i in range(len(out)):
-            # Get which index of the out tensor we should start updating with 
+            # Get which index of the out tensor we should start updating with
             to_index(i, out_shape, out_index)
-
 
             out_position = index_to_position(out_index, out_strides)
             a_position = index_to_position(out_index, a_strides)
@@ -374,7 +372,6 @@ def tensor_reduce(
                 out[out_position] = fn(out[out_position], a_storage[a_position])
 
                 a_position += a_strides[reduce_dim]
-
 
     return _reduce
 

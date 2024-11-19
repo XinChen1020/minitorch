@@ -25,7 +25,7 @@ def id(x: float) -> float:
 def add(x: float, y: float) -> float:
     "$f(x, y) = x + y$"
     # TODO: Implement for Task 0.1.
-    return x+y
+    return x + y
 
 
 def neg(x: float) -> float:
@@ -112,7 +112,7 @@ def inv(x: float) -> float:
 def inv_back(x: float, d: float) -> float:
     r"If $f(x) = 1/x$ compute $d \times f'(x)$"
     # TODO: Implement for Task 0.1.
-    return -d / (x * x) 
+    return -d / (x * x)
 
 
 def relu_back(x: float, d: float) -> float:
@@ -165,7 +165,7 @@ def zipWith(
          applying fn(x, y) on each pair of elements.
 
     """
-    
+
     return lambda a, b: [fn(x, y) for x, y in zip(a, b)]
 
 
@@ -193,10 +193,10 @@ def reduce(
     # TODO: Implement for Task 0.3.
     def apply(ls: Iterable[float]) -> float:
         result = start
-        
+
         for x in ls:
             result = fn(result, x)
-            
+
         return result
 
     return apply
