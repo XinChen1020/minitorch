@@ -1,4 +1,4 @@
-import random
+import random, time
 
 import numba
 
@@ -18,6 +18,10 @@ def RParam(*shape, backend):
     r = minitorch.rand(shape, backend=backend) - 0.5
     return minitorch.Parameter(r)
 
+def time_log_fn(epoch, start_time):
+     time_elapsed = time.time() - start_time
+     print("Epoch ", epoch, " time ", time_elapsed)
+     return time_elapsed
 
 class Network(minitorch.Module):
     def __init__(self, hidden, backend):
@@ -70,6 +74,7 @@ class FastTrain:
         optim = minitorch.SGD(self.model.parameters(), learning_rate)
         BATCH = 10
         losses = []
+        total_epoch_time = 0.0
 
         for epoch in range(max_epochs):
             total_loss = 0.0
@@ -102,6 +107,7 @@ class FastTrain:
                 y2 = minitorch.tensor(data.y)
                 correct = int(((out.detach() > 0.5) == y2).sum()[0])
                 log_fn(epoch, total_loss, correct, losses)
+        print(f'Average time per epoch {total_epoch_time/max_epochs} (for {max_epochs} epochs)')
 
 
 if __name__ == "__main__":
