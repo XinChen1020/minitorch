@@ -384,8 +384,24 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
         size (int): size of the square
     """
     BLOCK_DIM = 32
-    # TODO: Implement for Task 3.3.
-    raise NotImplementedError('Need to implement for Task 3.3')
+    a_cache = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
+    b_cache = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
+
+    col = cuda.threadIdx.x
+    row = cuda.threadIdx.y
+
+    if row >= size or col >= size:
+        return
+
+    a_cache[row, col] = a[row * size + col]
+    b_cache[row, col] = b[row * size + col]
+    cuda.syncthreads()
+
+    result = 0
+    for k in range(size):
+        result += a_cache[row, k] * b_cache[k, col]
+
+    out[row * size + col] = result
 
 
 jit_mm_practice = cuda.jit()(_mm_practice)
@@ -432,6 +448,7 @@ def _tensor_matrix_multiply(
     Returns:
         None : Fills in `out`
     """
+    # Ensure broadcastable for batch shape
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
     # Batch dimension - fixed
@@ -441,21 +458,63 @@ def _tensor_matrix_multiply(
     a_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
     b_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
 
-    # The final position c[i, j]
-    i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-    j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+    # Modified:
+    #   Replacing original:
+    #   The final position c[i, j]
+    #   i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+    #   j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+    #   (This map each thread from its own location on the grid to the transpose location
+    #     of the output tensor, rather than a 1:1 mapping)
+    # The final position c[row, col]
+    # Row-wise has the advantage of global memory coalescing and
+    # provides 1:1 mapping to the output tensor, which is more convenient
+    col = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+    row = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
 
     # The local position in the block.
-    pi = cuda.threadIdx.x
-    pj = cuda.threadIdx.y
+    local_col = cuda.threadIdx.x
+    local_row = cuda.threadIdx.y
 
     # Code Plan:
     # 1) Move across shared dimension by block dim.
     #    a) Copy into shared memory for a matrix.
     #    b) Copy into shared memory for b matrix
-    #    c) Compute the dot produce for position c[i, j]
-    # TODO: Implement for Task 3.4.
-    raise NotImplementedError('Need to implement for Task 3.4')
+    #    c) Compute the dot produce for position c[row, col]
+
+    result = 0.0
+    # Loop through tiles of A and B along the shared dimension
+    for tile_offset in range(0, a_shape[2], BLOCK_DIM):
+        # Compute global indices for the current tile
+        tile_col = tile_offset + local_col  # Global column index for A
+        tile_row = tile_offset + local_row  # Global row index for B
+
+        # Load A's tile into shared memory
+        if row < a_shape[1] and tile_col < a_shape[2]:
+            a_shared[local_row, local_col] = a_storage[
+                batch * a_batch_stride + row * a_strides[1] + tile_col * a_strides[2]
+            ]
+
+        # Load B's tile as its transpose into shared memory
+        # so that we can access shared memory row-wise rather than column-wise
+        if tile_row < b_shape[1] and col < b_shape[2]:
+            b_shared[local_col, local_row] = b_storage[
+                batch * b_batch_stride + tile_row * b_strides[1] + col * b_strides[2]
+            ]
+
+        # Synchronize threads to ensure all data is loaded
+        cuda.syncthreads()
+
+        # Compute the dot product using transposed B
+        for idx in range(BLOCK_DIM):
+            if idx + tile_offset < a_shape[2] and idx + tile_offset < b_shape[1]:
+                result += a_shared[local_row, idx] * b_shared[local_col, idx]
+
+        # Synchronize threads before loading the next tile
+        cuda.syncthreads()
+
+    # Write the final result to the output matrix
+    if row < out_shape[1] and col < out_shape[2]:
+        out[out_strides[0] * batch + out_strides[1] * row + out_strides[2] * col] = result
 
 
 tensor_matrix_multiply = cuda.jit(_tensor_matrix_multiply)
