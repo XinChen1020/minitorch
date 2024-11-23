@@ -68,6 +68,7 @@ jobs:
       run: |
         echo "Running GPU-dependent tests..."
         pytest tests -x -m task3_3
+        pytest tests -x -m task3_4
     
     - name: Skip GPU-dependent tests
       if: env.gpu != 'true' || env.gpu == ''
