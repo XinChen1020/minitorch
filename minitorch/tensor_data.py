@@ -248,16 +248,7 @@ class TensorData:
         new_shape = tuple(self.shape[i] for i in order)
         new_strides = tuple(self._strides[i] for i in order)
 
-        # Handle copying based on the type of storage
-        if numba.cuda.is_cuda_array(self._storage):
-            # If on GPU, explicitly allocate a new GPU array
-            new_storage = numba.cuda.device_array_like(self._storage)
-            new_storage.copy_to_device(self._storage)
-        else:
-            # If on CPU, use NumPy's copy
-            new_storage = self._storage.copy()
-
-        return TensorData(new_storage, new_shape, new_strides)
+        return TensorData(self._storage, new_shape, new_strides)
 
     def to_string(self) -> str:
         s = ""
