@@ -71,6 +71,9 @@ class CudaOps(TensorOps):
         f = tensor_reduce(cuda.jit(device=True)(fn))
 
         def ret(a: Tensor, dim: int) -> Tensor:
+
+            # Only perform partial reduction for tensors with size exceeding 1024
+            # (Important for large batch/sample size)
             out_shape = list(a.shape)
             out_shape[dim] = (a.shape[dim] - 1) // 1024 + 1
             out_a = a.zeros(tuple(out_shape))
@@ -81,7 +84,20 @@ class CudaOps(TensorOps):
                 *out_a.tuple(), out_a.size, *a.tuple(), dim, start
             )
 
-            return out_a
+            # Perform final reduction if necessary
+            if a.shape[dim] > 1024:
+                final_out_shape = list(a.shape)
+                final_out_shape[dim] = 1
+                final_out = a.zeros(tuple(final_out_shape))
+
+                threadsperblock = min(1024, out_a.size)
+                blockspergrid = 1
+                f[blockspergrid, threadsperblock](  # type: ignore
+                    *final_out.tuple(), final_out.size, *out_a.tuple(), dim, start
+                )
+                return final_out
+            else:
+                return out_a
 
         return ret
 
