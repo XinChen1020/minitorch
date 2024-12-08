@@ -33,6 +33,8 @@ pip install -r requirements.extra.txt
 
 Ensure you have the appropriate CUDA toolkit installed if you plan to run the project on a GPU.
 
+Example on switching between GPU and CPU tensor function backend is available in the [project/run_fast_tensor.py](project/run_fast_tensor.py)
+
 
 ## Example: MNIST Classification
 
@@ -58,7 +60,7 @@ Make sure the [MNIST](https://yann.lecun.com/exdb/mnist/) dataset is downloaded 
 
 ## Results
 
-All experimental results are stored in the `results` folder for analysis and future reference.
+All experimental results are stored in the `result_log` folder for analysis and future reference.
 
 ---
 
