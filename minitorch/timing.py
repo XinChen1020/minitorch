@@ -1,8 +1,5 @@
-import random
-from collections import defaultdict
 import minitorch
 import time
-import sys
 import numpy as np
 
 FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
