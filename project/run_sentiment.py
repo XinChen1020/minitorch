@@ -132,6 +132,29 @@ def default_log_fn(
         print(f"Validation accuracy: {validation_accuracy[-1]:.2%}")
         print(f"Best Valid accuracy: {best_val:.2%}")
 
+def file_log_fn(
+    epoch,
+    train_loss,
+    losses,
+    train_predictions,
+    train_accuracy,
+    validation_predictions,
+    validation_accuracy,
+):
+    global best_val
+    best_val = (
+        best_val if best_val > validation_accuracy[-1] else validation_accuracy[-1]
+    )
+    
+    # Open the file in append mode
+    with open("sentiment.txt", "a") as log_file:
+        log_file.write(f"Epoch {epoch}, loss {train_loss}, train accuracy: {train_accuracy[-1]:.2%}\n")
+        if len(validation_predictions) > 0:
+            log_file.write(f"Validation accuracy: {validation_accuracy[-1]:.2%}\n")
+            log_file.write(f"Best Valid accuracy: {best_val:.2%}\n")
+
+
+
 
 class SentenceSentimentTrain:
     def __init__(self, model):
@@ -291,4 +314,5 @@ if __name__ == "__main__":
         learning_rate,
         max_epochs=max_epochs,
         data_val=(X_val, y_val),
+        log_fn=file_log_fn
     )

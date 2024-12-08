@@ -106,6 +106,11 @@ def make_mnist(start, stop):
 def default_log_fn(epoch, total_loss, correct, total, losses, model):
     print(f"Epoch {epoch} loss {total_loss} valid acc {correct}/{total}")
 
+def file_log_fn(epoch, total_loss, correct, total, losses, model):
+    log_message = f"Epoch {epoch} loss {total_loss} valid acc {correct}/{total}\n"
+    
+    with open("mnist.txt", "a") as log_file:  # Open the file in append mode
+        log_file.write(log_message)
 
 class ImageTrain:
     def __init__(self):
@@ -188,4 +193,4 @@ class ImageTrain:
 
 if __name__ == "__main__":
     data_train, data_val = (make_mnist(0, 5000), make_mnist(10000, 10500))
-    ImageTrain().train(data_train, data_val, learning_rate=0.01)
+    ImageTrain().train(data_train, data_val, learning_rate=0.01, max_epochs = 5, log_fn = file_log_fn)
