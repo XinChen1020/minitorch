@@ -14,7 +14,7 @@ It was implemented entirely in Python, with enhancements like CUDA integration f
 
 ## Features
 
-- **Basic Tensor Operations**: Implemented core operations like addition, matrix multiplication, and reshaping.
+- **Basic Tensor Operations**: Implemented core operations like addition, matrix multiplication, and reshaping/view.
 - **Automatic Differentiation**: Built a simple autograd engine to compute gradients for optimization.
 - **Model Definition and Training**: Constructed custom modules and trained them using SGD.
 - **Optimizations**: Added CUDA support with optimizations like sequential addressing to reduce memory access conflicts.
