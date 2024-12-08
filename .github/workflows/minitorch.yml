@@ -51,6 +51,11 @@ jobs:
         echo "Module 3"
         pytest tests -x -m task3_1
         pytest tests -x -m task3_2
+        echo "Module 4"
+        pytest tests -x -m task4_1
+        pytest tests -x -m task4_2
+        pytest tests -x -m task4_3
+        pytest tests -x -m task4_4
     
     - name: Check for GPU
       id: check-gpu

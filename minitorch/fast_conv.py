@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from numba import njit
+from numba import njit, prange
 
 from .autodiff import Context
 from .tensor import Tensor
@@ -14,6 +14,7 @@ from .tensor_data import (
     to_index,
 )
 from .tensor_functions import Function
+import numpy as np
 
 # This code will JIT compile fast versions your tensor_data functions.
 # If you get an error, read the docs for NUMBA as to what is allowed
@@ -79,8 +80,40 @@ def _tensor_conv1d(
     s1 = input_strides
     s2 = weight_strides
 
-    # TODO: Implement for Task 4.1.
-    raise NotImplementedError('Need to implement for Task 4.1')
+    # Process each element in output in parallel
+    for element in prange(out_size):
+        out_index : Index = np.zeros(3, np.int32)
+        in_index : Index = np.zeros(3, np.int32)
+        weights_index : Index = np.zeros(3, np.int32)
+
+        to_index(element, out_shape, out_index)
+        cur_batch, cur_out_channel, cur_width = out_index
+
+        total = 0.0
+        # Loop through each channel in input
+        for curr_in_channel in range(in_channels):
+            # Loop through each input element within the sliding window
+            for position_in_window in range(kw):
+                if not reverse:
+
+                    # Padding
+                    if cur_width + position_in_window >= width:
+                        total += 0
+                    else:
+                        # Select corresponding weights and input value
+                        weights_index[0], weights_index[1], weights_index[2] = cur_out_channel, curr_in_channel, position_in_window
+                        in_index[0], in_index[1], in_index[2] = cur_batch, curr_in_channel, cur_width + position_in_window
+                        total += input[index_to_position(in_index, s1)] * weight[index_to_position(weights_index, s2)]
+                else:
+                    # Padding
+                    if cur_width - position_in_window < 0:
+                        total += 0
+                    else:
+                        weights_index[0], weights_index[1], weights_index[2] = cur_out_channel, curr_in_channel, position_in_window
+                        in_index[0], in_index[1], in_index[2] = cur_batch, curr_in_channel, cur_width - position_in_window
+                        total += input[index_to_position(in_index, s1)] * weight[index_to_position(weights_index, s2)]
+
+        out[index_to_position(out_index, out_strides)] = total
 
 
 tensor_conv1d = njit(parallel=True)(_tensor_conv1d)
@@ -205,8 +238,36 @@ def _tensor_conv2d(
     s10, s11, s12, s13 = s1[0], s1[1], s1[2], s1[3]
     s20, s21, s22, s23 = s2[0], s2[1], s2[2], s2[3]
 
-    # TODO: Implement for Task 4.2.
-    raise NotImplementedError('Need to implement for Task 4.2')
+    for element in prange(out_size):
+
+        out_index : Index = np.zeros(4, np.int32)
+        in_index : Index = np.zeros(4, np.int32)
+        weights_index : Index = np.zeros(4, np.int32)
+        to_index(element, out_shape, out_index)
+
+        cur_batch, cur_out_channel, cur_h, cur_w = out_index
+        total = 0
+        for cur_in_channel in range(in_channels):
+            for height_pos_offset in range(kh):
+                for width_pos_offset in range(kw):
+                    if not reverse:
+
+                        if cur_h + height_pos_offset >= height or cur_w + width_pos_offset >= width:
+                            total += 0
+                        else:
+                            weights_index[0], weights_index[1], weights_index[2], weights_index[3] = cur_out_channel, cur_in_channel, height_pos_offset, width_pos_offset
+                            in_index[0], in_index[1], in_index[2], in_index[3] = cur_batch, cur_in_channel, cur_h + height_pos_offset, cur_w + width_pos_offset
+                            total += input[index_to_position(in_index, s1)] * weight[index_to_position(weights_index, s2)]
+                    else:
+
+                        if cur_h - height_pos_offset < 0 or cur_w - width_pos_offset < 0:
+                            total += 0
+                        else:
+                            weights_index[0], weights_index[1], weights_index[2], weights_index[3] = cur_out_channel, cur_in_channel, height_pos_offset, width_pos_offset
+                            in_index[0], in_index[1], in_index[2], in_index[3] = cur_batch, cur_in_channel, cur_h - height_pos_offset, cur_w - width_pos_offset
+                            total += input[index_to_position(in_index, s1)] * weight[index_to_position(weights_index, s2)]
+
+        out[index_to_position(out_index, out_strides)] = total
 
 
 tensor_conv2d = njit(parallel=True, fastmath=True)(_tensor_conv2d)
