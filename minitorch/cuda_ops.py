@@ -1,8 +1,11 @@
-from typing import Callable, Optional
+# type: ignore
+# Currently pyright doesn't support numba.cuda
+
+from typing import Callable, Optional, TypeVar, Any
 
 import numba
 from numba import cuda
-
+from numba.cuda import jit as _jit
 from .tensor import Tensor
 from .tensor_data import (
     MAX_DIMS,
@@ -17,13 +20,26 @@ from .tensor_data import (
 )
 from .tensor_ops import MapProto, TensorOps
 
+FakeCUDAKernel = Any
+
 # This code will CUDA compile fast versions your tensor_data functions.
 # If you get an error, read the docs for NUMBA as to what is allowed
 # in these functions.
 
-to_index = cuda.jit(device=True)(to_index)
-index_to_position = cuda.jit(device=True)(index_to_position)
-broadcast_index = cuda.jit(device=True)(broadcast_index)
+Fn = TypeVar("Fn")
+
+
+def device_jit(fn: Fn, **kwargs) -> Fn:
+    return _jit(device=True, **kwargs)(fn)  # type: ignore
+
+
+def jit(fn, **kwargs) -> FakeCUDAKernel:
+    return _jit(**kwargs)(fn)  # type: ignore
+
+
+to_index = device_jit(to_index)
+index_to_position = device_jit(index_to_position)
+broadcast_index = device_jit(broadcast_index)
 
 THREADS_PER_BLOCK = 32
 
@@ -33,8 +49,9 @@ class CudaOps(TensorOps):
 
     @staticmethod
     def map(fn: Callable[[float], float]) -> MapProto:
-        "See `tensor_ops.py`"
-        f = tensor_map(cuda.jit(device=True)(fn))
+        """See `tensor_ops.py`"""
+        cufn: Callable[[float], float] = device_jit(fn)
+        f = tensor_map(cufn)
 
         def ret(a: Tensor, out: Optional[Tensor] = None) -> Tensor:
             if out is None:
@@ -50,7 +67,8 @@ class CudaOps(TensorOps):
 
     @staticmethod
     def zip(fn: Callable[[float, float], float]) -> Callable[[Tensor, Tensor], Tensor]:
-        f = tensor_zip(cuda.jit(device=True)(fn))
+        cufn: Callable[[float, float], float] = device_jit(fn)
+        f = tensor_zip(cufn)
 
         def ret(a: Tensor, b: Tensor) -> Tensor:
             c_shape = shape_broadcast(a.shape, b.shape)
@@ -66,38 +84,44 @@ class CudaOps(TensorOps):
 
     @staticmethod
     def reduce(
-        fn: Callable[[float, float], float], start: float = 0.0
+        fn: Callable[[float, float], float],
+        start: float = 0.0
     ) -> Callable[[Tensor, int], Tensor]:
-        f = tensor_reduce(cuda.jit(device=True)(fn))
+        cufn: Callable[[float, float], float] = device_jit(fn)
+        f = tensor_reduce(cufn)
 
         def ret(a: Tensor, dim: int) -> Tensor:
-
-            # Only perform partial reduction for tensors with size exceeding 1024
-            # (Important for large batch/sample size)
-            out_shape = list(a.shape)
-            out_shape[dim] = (a.shape[dim] - 1) // 1024 + 1
-            out_a = a.zeros(tuple(out_shape))
-
+            current = a
+            dim_size = current.shape[dim]
             threadsperblock = 1024
-            blockspergrid = out_a.size
-            f[blockspergrid, threadsperblock](  # type: ignore
-                *out_a.tuple(), out_a.size, *a.tuple(), dim, start
-            )
 
-            # Perform final reduction if necessary
-            if a.shape[dim] > 1024:
-                final_out_shape = list(a.shape)
-                final_out_shape[dim] = 1
-                final_out = a.zeros(tuple(final_out_shape))
+            # Keep reducing until the dimension size is 1
+            while dim_size > 1:
+                # Determine the next output size along the dimension:
+                # If it's larger than 1024, we do a partial reduction
+                # If it's <= 1024, we reduce directly down to 1 element.
+                if dim_size > 1024:
+                    out_dim_size = (dim_size - 1) // 1024 + 1
+                else:
+                    out_dim_size = 1
 
-                threadsperblock = min(1024, out_a.size)
-                blockspergrid = 1
-                f[blockspergrid, threadsperblock](  # type: ignore
-                    *final_out.tuple(), final_out.size, *out_a.tuple(), dim, start
+                out_shape = list(current.shape)
+                out_shape[dim] = out_dim_size
+                out = a.zeros(tuple(out_shape))
+
+                # If dim_size is large, we use the full 1024 threads.
+                # If not, we can shrink to out.size (usually <= 1024).
+                current_threads = 1024 if dim_size > 1024 else min(1024, out.size)
+                blockspergrid = out.size
+
+                f[blockspergrid, current_threads](
+                    *out.tuple(), out.size, *current.tuple(), dim, start
                 )
-                return final_out
-            else:
-                return out_a
+
+                current = out
+                dim_size = current.shape[dim]
+
+            return current
 
         return ret
 
