@@ -93,15 +93,14 @@ class CudaOps(TensorOps):
         def ret(a: Tensor, dim: int) -> Tensor:
             current = a
             dim_size = current.shape[dim]
-            threadsperblock = 1024
 
             # Keep reducing until the dimension size is 1
             while dim_size > 1:
                 # Determine the next output size along the dimension:
-                # If it's larger than 1024, we do a partial reduction
-                # If it's <= 1024, we reduce directly down to 1 element.
-                if dim_size > 1024:
-                    out_dim_size = (dim_size - 1) // 1024 + 1
+                # If it's larger than THREADS_PER_BLOCK, we do a partial reduction
+                # If it's <= THREADS_PER_BLOCK, we reduce directly down to 1 element.
+                if dim_size > THREADS_PER_BLOCK:
+                    out_dim_size = (dim_size - 1) // THREADS_PER_BLOCK + 1
                 else:
                     out_dim_size = 1
 
@@ -109,12 +108,12 @@ class CudaOps(TensorOps):
                 out_shape[dim] = out_dim_size
                 out = a.zeros(tuple(out_shape))
 
-                # If dim_size is large, we use the full 1024 threads.
-                # If not, we can shrink to out.size (usually <= 1024).
-                current_threads = 1024 if dim_size > 1024 else min(1024, out.size)
+                # If dim_size is large, we use the full THREADS_PER_BLOCK threads.
+                # If not, we can shrink to out.size (usually <= THREADS_PER_BLOCK).
+                current_threadsperblock = THREADS_PER_BLOCK if dim_size > THREADS_PER_BLOCK else min(THREADS_PER_BLOCK, out.size)
                 blockspergrid = out.size
 
-                f[blockspergrid, current_threads](
+                f[blockspergrid, current_threadsperblock](
                     *out.tuple(), out.size, *current.tuple(), dim, start
                 )
 
