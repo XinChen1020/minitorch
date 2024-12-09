@@ -110,10 +110,9 @@ class CudaOps(TensorOps):
 
                 # If dim_size is large, we use the full THREADS_PER_BLOCK threads.
                 # If not, we can shrink to out.size (usually <= THREADS_PER_BLOCK).
-                current_threadsperblock = THREADS_PER_BLOCK if dim_size > THREADS_PER_BLOCK else min(THREADS_PER_BLOCK, out.size)
                 blockspergrid = out.size
 
-                f[blockspergrid, current_threadsperblock](
+                f[blockspergrid, THREADS_PER_BLOCK](
                     *out.tuple(), out.size, *current.tuple(), dim, start
                 )
 
