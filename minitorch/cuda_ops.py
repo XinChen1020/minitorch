@@ -354,7 +354,7 @@ def tensor_reduce(
         # Important: This function only do partial reducation if the elements size
         # in the reduce_dim exceeds blockDim (1024 in this case).
 
-        BLOCK_DIM = 1024
+        BLOCK_DIM = THREADS_PER_BLOCK
         cache = cuda.shared.array(BLOCK_DIM, numba.float64)
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
         out_pos = cuda.blockIdx.x
